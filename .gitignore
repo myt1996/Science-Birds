@@ -9,3 +9,4 @@ Temp/*
 obj/*
 Assets/Experiments/* 
 Website/*
+.vs/*

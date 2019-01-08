@@ -19,6 +19,7 @@
 
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 public class ABMenu : MonoBehaviour {
 
@@ -31,4 +32,14 @@ public class ABMenu : MonoBehaviour {
 
 		ABSceneManager.Instance.LoadScene(sceneName, loadTransition, action);
 	}
+
+    public void Start()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+        if (scene.name == "MainMenu")
+        {
+            //ABSceneManager.Instance.LoadScene("LevelSelectMenu");
+            Assets.Scripts.AIWorker.SystemWorker.Start();
+        }
+    }
 }

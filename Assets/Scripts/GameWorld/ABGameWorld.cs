@@ -22,6 +22,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
+using Assets.Scripts.AIWorker;
 
 public class ABGameWorld : ABSingleton<ABGameWorld> {
 
@@ -69,6 +70,8 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 
 	public AudioClip  []_clips;
 
+    private LevelWorker ai_worker;
+
 	void Awake() {
 
 		_blocksTransform = GameObject.Find ("Blocks").transform;
@@ -82,7 +85,7 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 		_levelClearedBanner.gameObject.SetActive(false);
 
 		GameplayCam = GameObject.Find ("Camera").GetComponent<ABGameplayCamera>();
-	}
+    }
 
 	// Use this for initialization
 	void Start () {
@@ -134,7 +137,9 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 		}
 
 		_slingshotBaseTransform = GameObject.Find ("slingshot_base").transform;
-	}
+
+        ai_worker = SystemWorker.StartOneLevel(LevelList.Instance.CurrentIndex);
+    }
 
 	public void DecodeLevel(ABLevel currentLevel)  {
 		
@@ -234,6 +239,8 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 		
 		// Check if birds was trown, if it died and swap them when needed
 		ManageBirds();
+
+        if (ai_worker != null) ai_worker.WorkOneUpdate();
 	}
 	
 	public bool IsObjectOutOfWorld(Transform abGameObject, Collider2D abCollider) {

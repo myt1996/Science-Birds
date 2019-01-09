@@ -34,11 +34,16 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 	private List<ABBird>     _birds;
 	private List<ABParticle> _birdTrajectory;
 
+    public List<ABBird> Birds() { return _birds; }
+
 	private ABBird     _lastThrownBird;
 	private Transform  _blocksTransform;
 	private Transform  _birdsTransform;
 	private Transform  _plaftformsTransform;
 	private Transform  _slingshotBaseTransform;
+
+    public Transform BlocksTransform() { return _blocksTransform; }
+    public Transform PlatformsTransform() { return _plaftformsTransform; }
 
 	private GameObject _slingshot;
 	public GameObject Slingshot() { return _slingshot; }

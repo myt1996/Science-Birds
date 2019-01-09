@@ -131,4 +131,5 @@ public class ABWorldAssets {
 	public static readonly PhysicsMaterial2D WOOD_MATERIAL  = Resources.Load("Materials/Wood") as PhysicsMaterial2D;
 	public static readonly PhysicsMaterial2D STONE_MATERIAL = Resources.Load("Materials/Stone") as PhysicsMaterial2D;
 	public static readonly PhysicsMaterial2D ICE_MATERIAL   = Resources.Load("Materials/Ice") as PhysicsMaterial2D;
+    public static readonly PhysicsMaterial2D GROUND_MATERIAL = Resources.Load("Materials/Ground") as PhysicsMaterial2D;
 }

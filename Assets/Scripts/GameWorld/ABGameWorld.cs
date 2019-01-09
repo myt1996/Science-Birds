@@ -175,7 +175,15 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 			GameObject landscape = (GameObject)Instantiate(ABWorldAssets.LANDSCAPE, landscapePos, Quaternion.identity);
 			landscape.transform.parent = transform;
 
-			float screenRate = currentLevel.camera.maxWidth / LevelHeight;
+            foreach (Transform child in landscape.transform)
+            {
+                if (child.name == "Ground")
+                {
+                    child.gameObject.GetComponent<BoxCollider2D>().sharedMaterial = ABWorldAssets.GROUND_MATERIAL;
+                }
+            }
+
+            float screenRate = currentLevel.camera.maxWidth / LevelHeight;
 			if (screenRate > 2f) {
 
 				for (int j = 0; j < (int)screenRate; j++) {
@@ -378,7 +386,9 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 	public GameObject AddPlatform(GameObject original, Vector3 position, Quaternion rotation, float scaleX = 1f, float scaleY = 1f) {
 
 		GameObject platform = AddBlock (original, position, rotation, scaleX, scaleY);
-		platform.transform.parent = _plaftformsTransform;
+        platform.gameObject.GetComponent<BoxCollider2D>().sharedMaterial = ABWorldAssets.GROUND_MATERIAL;
+
+        platform.transform.parent = _plaftformsTransform;
 
 		return platform;
 	}

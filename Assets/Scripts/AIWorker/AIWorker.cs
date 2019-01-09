@@ -131,36 +131,50 @@ namespace Assets.Scripts.AIWorker
             if (NeedAction())
             {
                 Action action = ReadAction();
+                DoAction(action);
             }
         }
 
         public void DoAction(Action action)
         {
+            Debug.Log(action);
             ABGameWorld world = ABGameWorld.Instance;
             ABBird now_bird = world.GetCurrentBird();
             float new_mouse_x = mouse_x;
             float new_mouse_y = mouse_y;
 
-            switch(action)
+            switch (action)
             {
                 case Action.LEFT:
-                    new_mouse_x -= 0.1f;
-                    now_bird.DragBird(new Vector3(new_mouse_x, new_mouse_y));
+                    if (!now_bird.IsFlying && !now_bird.IsDying)
+                    {
+                        new_mouse_x -= 0.1f;
+                        now_bird.DragBird(new Vector3(new_mouse_x, new_mouse_y));
+                    }
                     break;
 
                 case Action.RIGHT:
-                    new_mouse_x += 0.1f;
-                    now_bird.DragBird(new Vector3(new_mouse_x, new_mouse_y));
+                    if (!now_bird.IsFlying && !now_bird.IsDying)
+                    {
+                        new_mouse_x += 0.1f;
+                        now_bird.DragBird(new Vector3(new_mouse_x, new_mouse_y));
+                    }
                     break;
 
                 case Action.UP:
-                    new_mouse_y += 0.1f;
-                    now_bird.DragBird(new Vector3(new_mouse_x, new_mouse_y));
+                    if (!now_bird.IsFlying && !now_bird.IsDying)
+                    {
+                        new_mouse_y += 0.1f;
+                        now_bird.DragBird(new Vector3(new_mouse_x, new_mouse_y));
+                    }
                     break;
 
                 case Action.DOWN:
-                    new_mouse_y -= 0.1f;
-                    now_bird.DragBird(new Vector3(new_mouse_x, new_mouse_y));
+                    if (!now_bird.IsFlying && !now_bird.IsDying)
+                    {
+                        new_mouse_y -= 0.1f;
+                        now_bird.DragBird(new Vector3(new_mouse_x, new_mouse_y));
+                    }
                     break;
 
                 case Action.RELEASE:
@@ -190,11 +204,11 @@ namespace Assets.Scripts.AIWorker
 
         public Action ReadAction()
         {
-            string action_file = WorkPath + "action.txt";
+            string action_file = WorkPath + "/action.txt";
             int action = 0;
             while (!File.Exists(action_file))
             {
-
+                System.Threading.Thread.Sleep(100);
             }
             if (File.Exists(action_file))
             {
@@ -203,7 +217,7 @@ namespace Assets.Scripts.AIWorker
                 {
                     string action_str = file.ReadLine();
                     file.Close();
-                    System.IO.File.Delete(action_file);
+                    //System.IO.File.Delete(action_file);
 
                     try
                     {
@@ -290,7 +304,8 @@ namespace Assets.Scripts.AIWorker
             //Vector3 sling_screen_pos = Camera.main.WorldToScreenPoint(sling_pos);
             //int sling_screen_x = (int)(sling_screen_pos.x / 4);
             //int sling_screen_y = (int)((480 - sling_screen_pos.y) / 4);
-            state[PointToState(world.Slingshot().transform.position, false), PointToState(world.Slingshot().transform.position, true)] = 1;
+            Vector3 slingshotPos = ABGameWorld.Instance.Slingshot().transform.position - ABConstants.SLING_SELECT_POS;
+            state[PointToState(slingshotPos, false), PointToState(slingshotPos, true)] = 1;
 
             //SetObjectToState(world.GetCurrentBird().gameObject, ref state, 1);
             mouse_x = _birds[0].transform.position.x;

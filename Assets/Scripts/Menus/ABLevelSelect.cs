@@ -25,18 +25,19 @@ using System.Linq;
 
 public class ABLevelSelect : ABMenu {
 
-	public int _lines = 5;
+    public int _lines = 5;
 
-	public GameObject _levelSelector;
-	public GameObject _canvas;
+    public GameObject _levelSelector;
+    public GameObject _canvas;
 
-	public Vector2 _startPos;
-	public Vector2 _buttonSize;
+    public Vector2 _startPos;
+    public Vector2 _buttonSize;
 
-	private int _clickedButton;
+    private int _clickedButton;
+    private bool first_start = true;
 
-	// Use this for initialization
-	void Start () {
+    // Use this for initialization
+    new void Start () {
 
 		// Load levels in the resources folder
 		TextAsset []levelsData = Resources.LoadAll<TextAsset>(ABConstants.DEFAULT_LEVELS_FOLDER);
@@ -98,5 +99,36 @@ public class ABLevelSelect : ABMenu {
 			if ((i + 1) % _lines == 0)
 				j--;
 		}
-	}
+
+        if(first_start)
+        {
+            System.String[] arguments = System.Environment.GetCommandLineArgs();
+
+            for (int i = 0; i < arguments.Length - 1; i++)
+            {
+                if (arguments[i].Equals("-l"))
+                {
+                    Assets.Scripts.AIWorker.SystemWorker.Log(arguments[i + 1]);
+                    int level_index = -1;
+                    try
+                    {
+                        level_index = System.Convert.ToInt32(arguments[i + 1]) - 1;
+                    }
+                    catch (System.Exception)
+                    {
+                    }
+
+                    if (level_index != -1)
+                    {
+                        LevelList.Instance.SetLevel(level_index);
+                        ABSceneManager.Instance.LoadScene("GameWorld");
+                        i = i + 1;
+                        break;
+                    }
+                }
+            }
+
+            first_start = false;
+        }
+    }
 }

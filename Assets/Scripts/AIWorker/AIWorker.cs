@@ -6,6 +6,9 @@ using System.Text;
 using UnityEngine;
 using SimpleJSON;
 using System.IO;
+using System.Threading;
+using System.Net;
+using System.Net.Sockets;
 
 namespace Assets.Scripts.AIWorker
 {
@@ -25,9 +28,13 @@ namespace Assets.Scripts.AIWorker
         private static LevelWorker cur_level_worker;
         public static string worker_path = System.IO.Path.GetFullPath(".");
 
+        private static string host = "127.0.0.1";
+        private static int port = 9999;
+        private static Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
         public static void Start()
         {
+            ConnectToServer();
             ParseRunArguments();
         }
 
@@ -45,17 +52,24 @@ namespace Assets.Scripts.AIWorker
         ///</summary>
         public static void ParseRunArguments()
         {
+            Log("parse arguments start");
             String[] arguments = Environment.GetCommandLineArgs();
 
             for (int i = 0; i < arguments.Length - 1; i++)
             {
                 if (arguments[i].Equals("-p"))
                 {
-                    if (System.IO.Directory.Exists(arguments[i + 1])) SystemWorker.worker_path = arguments[i + 1];
-                    else Debug.Log("Wrong work path: " + arguments[i + 1] + ", use exe path insteaded");
+                    if (System.IO.Directory.Exists(arguments[i + 1]))
+                    {
+                        SystemWorker.worker_path = arguments[i + 1];
+                        Log("Using work path: " + arguments[i + 1]);
+                        i = i + 1;
+                    }
+                    else Log("Wrong work path: " + arguments[i + 1] + ", use exe path insteaded");
                 }
                 else if (arguments[i].Equals("-l"))
                 {
+                    Log(arguments[i + 1]);
                     int level_index = -1;
                     try
                     {
@@ -63,21 +77,134 @@ namespace Assets.Scripts.AIWorker
                     }
                     catch (Exception)
                     {
-                        Debug.Log("Wrong level index: " + arguments[i + 1]);
+                        Log("Wrong level index: " + arguments[i + 1]);
                     }
 
                     if (level_index != -1)
                     {
-                        LevelList.Instance.SetLevel(level_index);
-                        ABSceneManager.Instance.LoadScene("GameWorld");
+                        ABSceneManager.Instance.LoadScene("LevelSelectMenu");
+                        Log("Jump to level " + arguments[i + 1]);
+                        i = i + 1;
                     }
+                    else Log("Wrong level argument " + arguments[i + 1]);
                 }
                 else
                 {
-                    Debug.Log("Wrong arguments: " + arguments[i]);
+                    Log("Wrong arguments: " + arguments[i]);
                 }
             }
         }
+
+        ///<summary>
+        ///Connect to server
+        ///</summary>
+        public static void ConnectToServer()
+        {
+            Log("connect to server");
+            try
+            {
+                client.Connect(new IPEndPoint(IPAddress.Parse(host), port));
+            }
+            catch (Exception e)
+            {
+                Log(e.Message);
+                return;
+            }
+
+            string welcome = Recieve();
+            Log("New message from server: " + welcome);
+
+            Send("ok");
+        }
+
+        ///<summary>
+        ///Recieve one send
+        ///</summary>
+        public static string Recieve()
+        {
+            Log("Recieving");
+            string data = "";
+            // Recieve header
+            var header = new byte[4];
+            var header_count = client.Receive(header);
+            int length = BitConverter.ToInt32(header, 0);
+            var total = 0; // total bytes to received
+            var dataleft = length; // bytes that havend been received 
+            var bytes = new byte[length];
+            // 1. check if the total bytes that are received < than the size you've send before to the server.
+            // 2. if true read the bytes that have not been receive jet
+            while (total < length)
+            {
+                // receive bytes in byte array data[]
+                // from position of total received and if the case data that havend been received.
+                var recv = client.Receive(bytes, total, dataleft, SocketFlags.None);
+                if (recv == 0) // if received data = 0 than stop reseaving
+                {
+                    bytes = null;
+                    break;
+                }
+                total += recv;  // total bytes read + bytes that are received
+                dataleft -= recv; // bytes that havend been received
+            }
+            data = Encoding.UTF8.GetString(bytes, 0, length);
+            return data;
+        }
+
+        ///<summary>
+        ///Send 
+        ///</summary>
+        public static int Send(string str)
+        {
+            int length = -1;
+
+            length = str.Length;
+            byte[] header = BitConverter.GetBytes(length);
+            byte[] body = Encoding.UTF8.GetBytes(str);
+
+            byte[] ret = new byte[header.Length + body.Length];
+            Buffer.BlockCopy(header, 0, ret, 0, header.Length);
+            Buffer.BlockCopy(body, 0, ret, header.Length, body.Length);
+
+            client.Send(ret);
+
+            return length;
+        }
+
+        ///<summary>
+        ///Save log 
+        ///</summary>
+        public static void Log(string str)
+        {
+            string path = worker_path + "/log.txt";
+            // This text is added only once to the file.
+            if (!File.Exists(path))
+            {
+                // Create a file to write to.
+                using (StreamWriter sw = File.CreateText(path))
+                {
+                    sw.WriteLine(str);
+                }
+            }
+            else
+            {
+                // This text is always added, making the file longer over time
+                // if it is not deleted.
+                using (StreamWriter sw = File.AppendText(path))
+                {
+                    sw.WriteLine(str);
+                }
+            }
+
+            
+        }
+    }
+
+    [Serializable]
+    public class StateUpload
+    {
+        public string request_name = "STATEUPLOAD";
+        public string state_path;
+        public bool return_action;
     }
 
     public class LevelWorker
@@ -126,8 +253,8 @@ namespace Assets.Scripts.AIWorker
             if (Camera.main.velocity != Vector3.zero) return;
             frames += 1;
             SaveState();
-            //Debug.Log(ABGameWorld.Instance.IsLevelStable() && (ABGameWorld.Instance.GetCurrentBird().IsFlying == false) && (ABGameWorld.Instance.GetCurrentBird().IsDying == false));
-            //Debug.Log("Passed frames: " + frames.ToString());
+            //Log(ABGameWorld.Instance.IsLevelStable() && (ABGameWorld.Instance.GetCurrentBird().IsFlying == false) && (ABGameWorld.Instance.GetCurrentBird().IsDying == false));
+            //Log("Passed frames: " + frames.ToString());
             if (NeedAction())
             {
                 Action action = ReadAction();
@@ -137,7 +264,7 @@ namespace Assets.Scripts.AIWorker
 
         public void DoAction(Action action)
         {
-            Debug.Log(action);
+            SystemWorker.Log(action.ToString());
             ABGameWorld world = ABGameWorld.Instance;
             ABBird now_bird = world.GetCurrentBird();
             float new_mouse_x = mouse_x;
@@ -204,6 +331,8 @@ namespace Assets.Scripts.AIWorker
 
         public Action ReadAction()
         {
+            string str = SystemWorker.Recieve();
+
             string action_file = WorkPath + "/action.txt";
             int action = 0;
             while (!File.Exists(action_file))
@@ -229,6 +358,7 @@ namespace Assets.Scripts.AIWorker
                     }
                 }
             }
+            SystemWorker.Log("Action: "+action.ToString());
             return (Action)action;
         }
 
@@ -311,7 +441,10 @@ namespace Assets.Scripts.AIWorker
             mouse_x = _birds[0].transform.position.x;
             mouse_y = _birds[0].transform.position.y;
 
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(WorkPath + "/state.array"))
+            DirectoryInfo states_info = new DirectoryInfo(WorkPath + "/Data/States");
+            int states_count = states_info.GetFiles().Length;
+            string filename = states_info.FullName + "/" + (states_count+1).ToString() + ".array";
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(filename))
             {
                 for (int i = 0; i < state_height; ++i)
                 {
@@ -324,6 +457,13 @@ namespace Assets.Scripts.AIWorker
                 }
                 file.Close();
             }
+            SystemWorker.Log("State: " + filename);
+
+            StateUpload state_upload = new StateUpload();
+            state_upload.state_path = filename;
+            state_upload.return_action = NeedAction();
+            string json = JsonUtility.ToJson(state_upload);
+            SystemWorker.Send(json);
         }
 
         private void SetObjectToState(GameObject gameobject, ref int[,] state, int type)

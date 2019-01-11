@@ -52,10 +52,9 @@ namespace Assets.Scripts.AIWorker
         ///</summary>
         public static void ParseRunArguments()
         {
-            Log("parse arguments start");
             String[] arguments = Environment.GetCommandLineArgs();
 
-            for (int i = 0; i < arguments.Length - 1; i++)
+            for (int i = 0; i < arguments.Length; i++)
             {
                 if (arguments[i].Equals("-p"))
                 {
@@ -88,7 +87,7 @@ namespace Assets.Scripts.AIWorker
                     }
                     else Log("Wrong level argument " + arguments[i + 1]);
                 }
-                else
+                else if (i!=0)
                 {
                     Log("Wrong arguments: " + arguments[i]);
                 }

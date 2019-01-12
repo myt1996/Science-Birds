@@ -188,10 +188,10 @@ public class ABBird : ABCharacter {
 		}
     }
 
-	public void DragBird(Vector3 dragPosition)
+	public Vector3 DragBird(Vector3 dragPosition)
 	{		
 		if (float.IsNaN(dragPosition.x) || float.IsNaN(dragPosition.y))
-			return;
+			return dragPosition;
 			
 		dragPosition.z = transform.position.z;
 		Vector3 slingshotPos = ABGameWorld.Instance.Slingshot ().transform.position - ABConstants.SLING_SELECT_POS;
@@ -212,7 +212,9 @@ public class ABBird : ABCharacter {
 		Collider2D col = _collider;
 		ABGameWorld.Instance.ChangeSlingshotBasePosition ((transform.position - slingshotPos).normalized 
 			* col.bounds.size.x / 2.25f + transform.position);
-	}
+
+        return dragPosition;
+    }
 
 	public void LaunchBird()
 	{

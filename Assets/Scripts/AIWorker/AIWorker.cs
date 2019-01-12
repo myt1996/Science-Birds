@@ -87,7 +87,7 @@ namespace Assets.Scripts.AIWorker
                     }
                     else Log("Wrong level argument " + arguments[i + 1]);
                 }
-                else if (i!=0)
+                else if (i != 0)
                 {
                     Log("Wrong arguments: " + arguments[i]);
                 }
@@ -110,10 +110,10 @@ namespace Assets.Scripts.AIWorker
                 return;
             }
 
-            string welcome = Recieve();
-            Log("New message from server: " + welcome);
+            //string welcome = Recieve();
+            //Log("New message from server: " + welcome);
 
-            Send("ok");
+            //Send("ok");
         }
 
         ///<summary>
@@ -194,7 +194,7 @@ namespace Assets.Scripts.AIWorker
                 }
             }
 
-            
+
         }
     }
 
@@ -204,6 +204,13 @@ namespace Assets.Scripts.AIWorker
         public string request_name = "STATEUPLOAD";
         public string state_path;
         public bool return_action;
+    }
+
+    [Serializable]
+    public class ActionResponse
+    {
+        public string response_name = "ACTIONRESPONSE";
+        public int action_index;
     }
 
     public class LevelWorker
@@ -226,6 +233,7 @@ namespace Assets.Scripts.AIWorker
 
         private float mouse_x = 0;
         private float mouse_y = 0;
+        private bool in_draging = false;
 
         private int frames = 0;
         private bool skill_used = true;
@@ -313,7 +321,6 @@ namespace Assets.Scripts.AIWorker
                     break;
 
                 case Action.SKILL:
-                    now_bird.SendMessage("SpecialAttack", SendMessageOptions.DontRequireReceiver);
                     if (now_bird && now_bird.IsInFrontOfSlingshot() &&
                         now_bird == ABGameWorld.Instance.GetCurrentBird() &&
                         !now_bird.IsDying && !skill_used)
@@ -330,34 +337,13 @@ namespace Assets.Scripts.AIWorker
 
         public Action ReadAction()
         {
-            string str = SystemWorker.Recieve();
+            string json_str = SystemWorker.Recieve();
 
-            string action_file = WorkPath + "/action.txt";
-            int action = 0;
-            while (!File.Exists(action_file))
-            {
-                System.Threading.Thread.Sleep(100);
-            }
-            if (File.Exists(action_file))
-            {
-                
-                using (System.IO.StreamReader file = new System.IO.StreamReader(action_file))
-                {
-                    string action_str = file.ReadLine();
-                    file.Close();
-                    //System.IO.File.Delete(action_file);
+            ActionResponse action_response = new ActionResponse();
+            JsonUtility.FromJsonOverwrite(json_str, action_response);
 
-                    try
-                    {
-                        action = Convert.ToInt32(action_str);
-                    }
-                    catch (Exception)
-                    {
-
-                    }
-                }
-            }
-            SystemWorker.Log("Action: "+action.ToString());
+            int action = action_response.action_index;
+            SystemWorker.Log("Action: " + action.ToString());
             return (Action)action;
         }
 
@@ -437,12 +423,29 @@ namespace Assets.Scripts.AIWorker
             state[PointToState(slingshotPos, false), PointToState(slingshotPos, true)] = 1;
 
             //SetObjectToState(world.GetCurrentBird().gameObject, ref state, 1);
-            mouse_x = _birds[0].transform.position.x;
-            mouse_y = _birds[0].transform.position.y;
+            //mouse_x = _birds[0].transform.position.x;
+            //mouse_y = _birds[0].transform.position.y;
+
+            if (!in_draging && !_birds[0].OutOfSlingShot)
+            {
+                mouse_x = slingshotPos.x - 0.44f;
+                mouse_y = slingshotPos.y - 0.44f;
+                in_draging = true;
+            }
+            else
+            {
+                mouse_x = _birds[0].transform.position.x;
+                mouse_y = _birds[0].transform.position.y;
+            }
+
+            if (_birds[0].IsFlying || _birds[0].IsDying)
+            {
+                in_draging = false;
+            }
 
             DirectoryInfo states_info = new DirectoryInfo(WorkPath + "/Data/States");
             int states_count = states_info.GetFiles().Length;
-            string filename = states_info.FullName + "/" + (states_count+1).ToString() + ".array";
+            string filename = states_info.FullName + "/" + (states_count + 1).ToString() + ".array";
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(filename))
             {
                 for (int i = 0; i < state_height; ++i)
@@ -509,7 +512,7 @@ namespace Assets.Scripts.AIWorker
             }
             else
             {
-                int y = (int)( (screen_height - screen_point.y) * state_height / screen_height);
+                int y = (int)((screen_height - screen_point.y) * state_height / screen_height);
                 if (y >= state_height) return state_height - 1;
                 else if (y <= 0) return 0;
                 else return y;

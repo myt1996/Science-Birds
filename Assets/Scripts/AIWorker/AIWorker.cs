@@ -275,7 +275,15 @@ namespace Assets.Scripts.AIWorker
         {
             if (Camera.main.velocity != Vector3.zero) return;
             frames += 1;
-            if (frames % 6 != 0) return;
+            //Log("Passed frames: " + frames.ToString());
+            if (frames % 6 != 0)
+            {
+                if (in_draging)
+                {
+                    target = ABGameWorld.Instance.GetCurrentBird().DragBird(target);
+                }
+                return;
+            }
 
             if (ABGameWorld.Instance.GetBirdsAvailableAmount() == 0 || ABGameWorld.Instance.GetPigsAvailableAmount() == 0)
             {
@@ -283,7 +291,6 @@ namespace Assets.Scripts.AIWorker
             }
 
             SaveState();
-            //Log("Passed frames: " + frames.ToString());
             Action action = ReadAction();
             DoAction(action);
             //if (NeedAction())
@@ -299,11 +306,7 @@ namespace Assets.Scripts.AIWorker
             ABGameWorld world = ABGameWorld.Instance;
             ABBird now_bird = world.GetCurrentBird();
 
-            if(!in_draging)
-            {
-                target.x = slingshotPos.x - 0.4f;
-                target.y = slingshotPos.y - 0.4f;
-            }
+            target = now_bird.transform.position;
 
             switch (action)
             {
@@ -345,7 +348,7 @@ namespace Assets.Scripts.AIWorker
 
                 case Action.RELEASE:
                     if (now_bird && !now_bird.IsFlying && !now_bird.IsDying &&
-                        now_bird == ABGameWorld.Instance.GetCurrentBird())
+                        now_bird == ABGameWorld.Instance.GetCurrentBird() && Vector2.Distance( now_bird.transform.position, slingshotPos ) >= 0.5) // to prevent no-use release in training
                     {
                         skill_used = false;
                         now_bird.LaunchBird();
